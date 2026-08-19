@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartcampus-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: smartcampus_user
+      POSTGRES_PASSWORD: smartcampus_password
+      POSTGRES_DB: smartcampus_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartcampus_user -d smartcampus_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: smartcampus-api
+    restart: always
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://smartcampus_user:smartcampus_password@postgres:5432/smartcampus_db?schema=public
+      JWT_SECRET: supersecret_jwt_key_smartcampus_devfusion_2026_change_in_prod
+      COOKIE_SECRET: supersecret_cookie_key_smartcampus_devfusion_2026
+      FRONTEND_URL: http://localhost:5173
+      BACKEND_URL: http://localhost:5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: smartcampus-web
+    restart: always
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:

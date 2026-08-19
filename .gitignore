@@ -1,0 +1,38 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+dist
+build
+.vite
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Prisma
+/apps/api/prisma/migrations/*
+!/apps/api/prisma/migrations/.keep
+
+# Uploads
+/apps/api/uploads/*
+!/apps/api/uploads/.gitkeep
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+node_modules/
+.env
+apps/api/.env
+dist/

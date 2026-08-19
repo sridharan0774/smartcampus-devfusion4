@@ -1,0 +1,65 @@
+name: SmartCampus CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: smartcampus_user
+          POSTGRES_PASSWORD: smartcampus_password
+          POSTGRES_DB: smartcampus_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build Shared Package
+        run: npm run build --workspace=packages/shared
+
+      - name: Run Prisma Migrations
+        env:
+          DATABASE_URL: postgresql://smartcampus_user:smartcampus_password@localhost:5432/smartcampus_db?schema=public
+        run: npm run db:migrate --workspace=apps/api
+
+      - name: Seed Database
+        env:
+          DATABASE_URL: postgresql://smartcampus_user:smartcampus_password@localhost:5432/smartcampus_db?schema=public
+        run: npm run db:seed --workspace=apps/api
+
+      - name: Typecheck Workspace
+        run: npm run typecheck
+
+      - name: Run Integration Tests
+        env:
+          DATABASE_URL: postgresql://smartcampus_user:smartcampus_password@localhost:5432/smartcampus_db?schema=public
+          JWT_SECRET: ci_testing_jwt_secret_key_123456789
+          COOKIE_SECRET: ci_testing_cookie_secret_key_123456789
+        run: npm run test --workspace=apps/api
+
+      - name: Build Production Bundles
+        run: npm run build
