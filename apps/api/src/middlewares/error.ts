@@ -5,16 +5,17 @@ export const errorHandler = (
   err: any,
   req: Request,
   res: Response,
-  next: NextFunction
+  _next: NextFunction
 ) => {
   console.error('❌ Express Error Handler:', err);
 
-  if (err instanceof ZodError) {
+  if (err instanceof ZodError || err?.name === 'ZodError' || (err && (Array.isArray(err.issues) || Array.isArray(err.errors)))) {
+    const details = err.issues || err.errors || [];
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
       code: 'VALIDATION_ERROR',
-      error: err.errors,
+      errors: details,
     });
   }
 

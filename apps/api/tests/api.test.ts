@@ -31,6 +31,31 @@ describe('SmartCampus API Integration Tests', () => {
     studentCookie = studentRes.headers['set-cookie'][0];
   });
 
+  it('Auth: Should return HTTP 400 VALIDATION_ERROR on empty registration body {} without crashing process', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({});
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.code).toBe('VALIDATION_ERROR');
+    expect(Array.isArray(res.body.errors)).toBe(true);
+  });
+
+  it('Auth: Should return HTTP 400 EMAIL_EXISTS when registering existing email', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'Student Demo',
+        email: 'student@smartcampus.demo',
+        password: 'Password123!',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.code).toBe('EMAIL_EXISTS');
+  });
+
   it('Auth: Should return current user profile via HTTP-only cookie', async () => {
     const res = await request(app)
       .get('/api/auth/me')
@@ -78,7 +103,7 @@ describe('SmartCampus API Integration Tests', () => {
     if (!eventId) return;
 
     // First attempt (might already be registered from seed)
-    const firstRes = await request(app)
+    await request(app)
       .post(`/api/events/${eventId}/register`)
       .set('Cookie', [studentCookie]);
 
